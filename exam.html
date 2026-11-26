@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>ゼミ選抜テスト</title>
+<style>
+  :root {
+    --ink: #1d2433; --sub: #5b6577; --line: #e3e7ee; --bg: #f6f7fa; --card: #fff;
+    --accent: #2456c7; --accent-ink: #fff; --warn: #c62828; --warn-bg: #fdecea; --ok: #1b7f3b;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+    font-size: 16px; line-height: 1.6; }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 20px 16px 40px; }
+  .screen { display: none; }
+  .screen.on { display: block; }
+  h1 { font-size: 21px; margin: 4px 0 14px; line-height: 1.4; }
+  h2 { font-size: 18px; margin: 0 0 12px; }
+  p { margin: 0 0 12px; }
+  .muted { color: var(--sub); font-size: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  ul.plain { margin: 0 0 4px; padding-left: 1.2em; }
+  ul.plain li { margin-bottom: 6px; }
+  .btn { display: block; width: 100%; border: 0; border-radius: 12px; padding: 15px 16px; font-size: 17px; font-weight: 600;
+    background: var(--accent); color: var(--accent-ink); margin-top: 10px; cursor: pointer; font-family: inherit; }
+  .btn.ghost { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+  .btn.plain { background: transparent; color: var(--sub); font-weight: 500; font-size: 15px; padding: 10px; }
+  .btn:disabled { opacity: .4; cursor: default; }
+  label.check { display: flex; gap: 10px; align-items: flex-start; padding: 12px; background: #f0f4fb; border-radius: 10px; margin-top: 6px; }
+  label.check input { width: 22px; height: 22px; margin-top: 2px; flex: none; }
+  input[type=text], input[type=password] { width: 100%; font-size: 18px; padding: 12px 14px; border-radius: 10px;
+    border: 1.5px solid var(--line); font-family: inherit; }
+  .notice { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-bottom: 12px; }
+  .err { color: var(--warn); font-size: 14px; min-height: 1.4em; margin-top: 6px; }
+
+  /* カメラ */
+  #camWrap { display: none; position: relative; overflow: hidden; background: #111; }
+  #camWrap.big { display: block; width: 100%; aspect-ratio: 3 / 4; max-height: 52vh; border-radius: 14px; margin-bottom: 14px; }
+  #camWrap.small { display: block; position: fixed; top: 10px; right: 10px; width: 76px; height: 100px; border-radius: 10px; z-index: 20;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+  #camWrap video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  #camWrap.alert { outline: 3px solid var(--warn); }
+  .faceBadge { position: absolute; left: 8px; bottom: 8px; font-size: 13px; padding: 3px 9px; border-radius: 99px; background: rgba(0,0,0,.6); color: #fff; }
+  #camWrap.small .faceBadge { display: none; }
+
+  /* 順位付け */
+  .rankItem { display: flex; gap: 12px; align-items: center; width: 100%; text-align: left; background: var(--card); border: 1.5px solid var(--line);
+    border-radius: 12px; padding: 14px; margin-bottom: 10px; font-family: inherit; font-size: 16px; color: var(--ink); cursor: pointer; }
+  .rankItem .no { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 2px dashed #b8c0cc; display: grid; place-items: center;
+    font-weight: 700; font-size: 17px; color: #b8c0cc; }
+  .rankItem.ranked { border-color: var(--accent); background: #f2f6ff; }
+  .rankItem.ranked .no { border: 0; background: var(--accent); color: #fff; }
+  .rankItem b { display: block; }
+  .rankItem small { color: var(--sub); font-size: 13px; }
+
+  /* 出題 */
+  #s-q .wrap { padding-top: 14px; }
+  .qHead { display: flex; align-items: center; gap: 8px; margin-right: 88px; font-size: 14px; color: var(--sub); }
+  .tag { background: #eaf0fb; color: var(--accent); border-radius: 99px; padding: 2px 10px; font-weight: 600; font-size: 13px; }
+  .timer { height: 8px; background: #e4e8ef; border-radius: 99px; overflow: hidden; margin: 12px 88px 18px 0; }
+  .timer i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
+  .timer.low i { background: var(--warn); }
+  .qText { font-size: 19px; font-weight: 600; line-height: 1.55; min-height: 90px; margin-bottom: 14px; }
+  .choice { display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; background: var(--card);
+    border: 2px solid var(--line); border-radius: 14px; padding: 16px 14px; margin-bottom: 12px; font-size: 17px; line-height: 1.5;
+    font-family: inherit; color: var(--ink); cursor: pointer; min-height: 84px; }
+  .choice .lbl { flex: none; width: 30px; height: 30px; border-radius: 8px; background: var(--ink); color: #fff; display: grid; place-items: center;
+    font-weight: 700; font-size: 15px; }
+  .choice.picked { border-color: var(--accent); background: #eef3ff; }
+  .choice:disabled { cursor: default; }
+  .count { font-size: 88px; font-weight: 800; text-align: center; margin-top: 18vh; color: var(--accent); }
+
+  /* 警告 */
+  #warn { display: none; position: fixed; left: 10px; right: 96px; top: 10px; z-index: 30; background: var(--warn); color: #fff;
+    border-radius: 12px; padding: 10px 12px; font-size: 14px; font-weight: 600; line-height: 1.45; box-shadow: 0 3px 12px rgba(0,0,0,.25); }
+  #warn.on { display: block; }
+  #toast { display: none; position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 30; background: #222; color: #fff;
+    border-radius: 99px; padding: 10px 18px; font-size: 14px; white-space: nowrap; }
+  #toast.on { display: block; }
+  .spinner { width: 34px; height: 34px; border: 4px solid #d6dbe4; border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.9s linear infinite; margin: 22vh auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .center { text-align: center; }
+  .info { background: #eef3ff; color: #1d3f8f; border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-bottom: 12px; }
+  body.camSmall h1 { margin-right: 86px; min-height: 92px; }
+  body.camSmall .timer { margin-bottom: 58px; }
+</style>
+</head>
+<body>
+
+<div id="warn"></div>
+<div id="toast"></div>
+<div id="camWrap"><video id="video" playsinline muted autoplay></video><span class="faceBadge" id="faceBadge">顔を確認中…</span></div>
+
+<section class="screen on" id="s-loading"><div class="wrap center">
+  <div class="spinner"></div><p class="muted" id="loadingMsg">読み込んでいます…</p>
+</div></section>
+
+<section class="screen" id="s-msg"><div class="wrap">
+  <h1 id="msgTitle"></h1><div class="card"><p id="msgBody" style="margin:0;white-space:pre-line"></p></div>
+  <a class="btn" id="msgBack" href="#" style="display:none;text-align:center;text-decoration:none">入口のページに戻る</a>
+</div></section>
+
+<!-- カメラの準備 -->
+<section class="screen" id="s-camstart"><div class="wrap">
+  <h1>カメラの準備</h1>
+  <div class="card">
+    <p>受験中はインカメラで、顔が1つ映っているかだけを確認します。映像はこのスマホの中だけで処理し、保存・送信はしません。</p>
+    <p class="muted" style="margin:0">次のボタンを押して、カメラの使用を求められたら「許可」を選んでください。</p>
+  </div>
+  <button class="btn" id="btnCam">カメラを起動する</button>
+</div></section>
+
+<section class="screen" id="s-camfail"><div class="wrap">
+  <h1>カメラを起動できませんでした</h1>
+  <div class="card">
+    <p>次の点を確認して、もう一度お試しください。</p>
+    <ul class="plain">
+      <li>カメラの使用を求められたら「許可」を選んでください。</li>
+      <li>LINEやInstagramなどのアプリ内ブラウザではなく、Safari または Chrome で開いてください。</li>
+      <li>以前に「許可しない」を選んだ場合：iPhone は「設定 → アプリ → Safari → カメラ」、Android の Chrome はアドレスバー左のアイコン → 権限 から「許可」に変えて、再読み込みしてください。</li>
+      <li>ほかのアプリでカメラを使っていたら閉じてください。</li>
+    </ul>
+    <p class="muted" id="camErrDetail" style="margin:0"></p>
+  </div>
+  <button class="btn" id="btnCamRetry">もう一度試す</button>
+  <button class="btn ghost" id="btnCamToLab">研究室で受験する（この受験は取り消し・回数に数えません）</button>
+</div></section>
+
+<!-- 本人確認 -->
+<section class="screen" id="s-identity"><div class="wrap">
+  <h1>本人確認</h1>
+  <div id="camSlot"></div>
+  <p class="muted" id="idCamHint">自分の顔が映っていることを確認してください。受験中もこのくらいの位置でスマホを持ちます。</p>
+  <div class="info" id="labOk" style="display:none">研究室での受験（カメラなし）です。</div>
+  <div class="card">
+    <p style="font-size:18px;margin-bottom:4px"><b id="idName"></b></p>
+    <p class="muted" id="idEmail" style="margin:0"></p>
+  </div>
+  <button class="btn" id="btnIdNext">次へ</button>
+</div></section>
+
+<!-- 開始前の説明 -->
+<section class="screen" id="s-ready"><div class="wrap">
+  <h1>受験の前に</h1>
+  <div class="card">
+    <ul class="plain">
+      <li id="readyCount"></li>
+      <li>迷ったら直感で選んでください。タップしなかった問題は無回答になります。</li>
+      <li id="readyCam">顔がカメラに映るようにスマホを持ってください。顔が映っていない・複数の顔が映っているときは警告が出て、記録が残ります。</li>
+      <li>受験中にほかのアプリや画面に切り替えると記録が残ります。</li>
+      <li><b>本番を始めたら、最後まで画面を閉じないでください。</b>解き終わると自動で提出のページに戻ります。</li>
+    </ul>
+  </div>
+  <p class="muted">まず練習問題（1問・記録されません）で操作を確認してください。</p>
+  <button class="btn ghost" id="btnPractice">練習問題をやってみる</button>
+  <button class="btn" id="btnStart" disabled>本番を始める</button>
+  <div class="err" id="startErr"></div>
+</div></section>
+
+<section class="screen" id="s-count"><div class="wrap"><div class="count" id="countNum">3</div>
+  <p class="center muted" id="countLabel"></p></div></section>
+
+<section class="screen" id="s-q"><div class="wrap">
+  <div class="qHead"><span id="qProg"></span><span class="tag" id="qTag"></span></div>
+  <div class="timer" id="timer"><i id="timerBar"></i></div>
+  <div class="qText" id="qText"></div>
+  <button class="choice" id="choiceA" data-c="A"><span class="lbl">A</span><span id="qA"></span></button>
+  <button class="choice" id="choiceB" data-c="B"><span class="lbl">B</span><span id="qB"></span></button>
+</div></section>
+
+<section class="screen" id="s-sending"><div class="wrap center">
+  <div class="spinner"></div>
+  <p id="sendMsg">提出のページに移動しています…</p>
+  <p class="muted">移動しない場合は、下のボタンを押してください。</p>
+  <a class="btn" id="sendLink" href="#" style="text-align:center;text-decoration:none">提出のページへ</a>
+</div></section>
+
+<script>
+/*
+ * ゼミ選抜テスト 受験画面（GitHub Pages に置く）
+ *  - 入口（大学アカウントのGAS）が発行したリンクに、受験ID・氏名・出題する問題のIDと「問題ごとの鍵」が入っています
+ *  - 同じフォルダの questions.enc.json（暗号化された問題）から、自分の問題だけを復号します
+ *  - このページはどこにも通信しません（問題ファイルと顔検知プログラムの読み込みを除く）
+ *  - 解き終わると、回答とカメラの記録を持って入口のページに画面ごと戻り、そこで提出されます
+ */
+const CAT_LABEL = { '問い': '問いの面白さ', '分析': '分析能力', 'プレゼン': 'プレゼン能力' };
+const MP_VER = '1.2.3';
+const MP_BASE = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@' + MP_VER;
+const FACE_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite';
+const NO_FACE_GRACE_MS = 3000;   // 顔なしがこの時間続いたら警告・記録
+const MULTI_FACE_GRACE_MS = 1000; // 複数の顔がこの時間続いたら警告・記録
+const PRACTICE_Q = { id: 'practice', cat: '練習', text: '練習：1日は何時間？', a: '24時間', b: '12時間' };
+
+const $ = (id) => document.getElementById(id);
+const S = {
+  att: null, mode: 'camera', qReady: null, decrypted: null,
+  stream: null, detector: null, detectorStatus: 'off', detectErrors: 0, faceCount: null, loopId: null, cameraStopped: false,
+  cond: 'ok', condSince: 0, pendCond: null, pendCount: 0, episode: null,
+  questions: [], idx: 0, answers: [], alerts: [], examStart: 0,
+  phase: 'idle', // idle | practice | exam | done
+  qStart: 0, tick: null, locked: false, practiceDone: false, hiddenAt: null,
+};
+
+/* ---------- 共通 ---------- */
+function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); window.scrollTo(0, 0); }
+function msg(title, body, backUrl) {
+  $('msgTitle').textContent = title; $('msgBody').textContent = body;
+  $('msgBack').style.display = backUrl ? 'block' : 'none';
+  if (backUrl) $('msgBack').href = backUrl;
+  show('s-msg'); stopCamera();
+}
+function toast(t, ms) { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('on'), ms || 3000); }
+function errText(e) { return (e && e.message) ? e.message : String(e); }
+function b64urlEncode(text) {
+  const bytes = new TextEncoder().encode(text); let bin = '';
+  bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64ToBytes(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
+function b64urlDecode(s) { return new TextDecoder().decode(b64ToBytes(s)); }
+function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+/* 入口のページに画面ごと戻る（回答の提出・取消） */
+function goBack(entryUrl, payload, text) {
+  stopCamera();
+  window.onbeforeunload = null;
+  const url = entryUrl + '#r=' + b64urlEncode(JSON.stringify(payload));
+  $('sendMsg').textContent = text || '提出のページに移動しています…';
+  $('sendLink').href = url;
+  show('s-sending');
+  setTimeout(() => { location.href = url; }, 300);
+}
+function abort(reason) { goBack(S.att.r, { x: S.att.x, abort: reason }, '入口のページに戻っています…'); }
+
+/* ---------- 起動 ---------- */
+function boot() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (h.get('s')) { // 送り直し
+    let info = null;
+    try { info = JSON.parse(b64urlDecode(h.get('s'))); } catch (e) {}
+    history.replaceState(null, '', location.pathname);
+    if (!info) return msg('リンクが正しくありません', '入口のページから開き直してください。');
+    for (const x of (info.xs || [])) {
+      const p = lsGet('done_' + x);
+      if (p) return goBack(info.r, Object.assign({}, p, { rs: 1 }), '前回の回答を送り直しています…');
+    }
+    return msg('送り直す回答が見つかりません',
+      'このスマホ（ブラウザ）には、送信前の回答が残っていません。受験に使ったスマホとブラウザで開いているか確認してください。\n途中で閉じてしまった場合は、入口のページに戻り「もう一度受験する」を選んでください。', info.r);
+  }
+
+  let att = null;
+  if (h.get('d')) {
+    try { att = JSON.parse(b64urlDecode(h.get('d'))); } catch (e) {}
+    if (att) { try { sessionStorage.setItem('att', JSON.stringify(att)); } catch (e) {} }
+    history.replaceState(null, '', location.pathname); // 鍵をアドレスバーから消す
+  } else {
+    try { att = JSON.parse(sessionStorage.getItem('att') || 'null'); } catch (e) {}
+  }
+  if (!att || !att.x || !att.r) return msg('入口のページから開いてください', '配布された受験用URL（大学のGoogleのページ）から開いてください。');
+  S.att = att; S.mode = att.m === 'lab' ? 'lab' : 'camera';
+
+  const done = lsGet('done_' + att.x);
+  if (done) return goBack(att.r, done, '回答を提出しています…');
+  if (lsGet('started_' + att.x)) {
+    return msg('受験が中断されました',
+      'この受験は途中で画面が閉じられたため、続けることはできません。\n入口のページに戻ると、もう1回だけ受験できます（2回とも提出できなかった場合は、小島まで連絡してください）。', att.r);
+  }
+  S.qReady = loadQuestions(); // 問題の読み込みと復号（表示は本番開始まで行わない）
+  S.qReady.catch(() => {});
+  if (S.mode === 'lab') return goIdentity();
+  show('s-camstart');
+}
+
+/* 暗号化された問題ファイルから、自分の問題だけを復号 */
+async function loadQuestions() {
+  const res = await fetch('questions.enc.json?t=' + Date.now(), { cache: 'no-store' });
+  if (!res.ok) throw new Error('問題ファイルを読み込めません（' + res.status + '）');
+  const file = await res.json();
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const out = [];
+  for (const [id, cat, k] of S.att.q) {
+    const item = file.items && file.items[id];
+    if (!item) throw new Error('問題 ' + id + ' がファイルにありません');
+    const key = await crypto.subtle.importKey('raw', b64ToBytes(k), 'AES-GCM', false, ['decrypt']);
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(item.iv), additionalData: enc.encode(id) }, key, b64ToBytes(item.ct));
+    const q = JSON.parse(dec.decode(pt));
+    out.push({ id: id, cat: cat, text: q.t, a: q.a, b: q.b });
+  }
+  S.decrypted = out;
+  return out;
+}
+
+$('btnCam').addEventListener('click', async () => {
+  $('btnCam').disabled = true;
+  if (await startCamera()) goIdentity();
+  $('btnCam').disabled = false;
+});
+$('btnCamRetry').addEventListener('click', async () => { if (await startCamera()) goIdentity(); });
+$('btnCamToLab').addEventListener('click', () => abort('カメラが起動しない'));
+
+/* ---------- カメラと顔検知 ---------- */
+async function startCamera() {
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('このブラウザはカメラに対応していません');
+    if (!S.stream || !S.stream.active) {
+      S.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+      S.stream.getVideoTracks().forEach(t => t.addEventListener('ended', () => { if (S.phase === 'exam') S.cameraStopped = true; }));
+    }
+    const v = $('video');
+    v.srcObject = S.stream;
+    await v.play().catch(() => {});
+    if (S.detectorStatus === 'off') loadDetector();
+    if (!S.loopId) S.loopId = setInterval(detectLoop, 250);
+    return true;
+  } catch (e) {
+    $('camErrDetail').textContent = '（詳細：' + errText(e) + '）';
+    show('s-camfail');
+    return false;
+  }
+}
+function stopCamera() {
+  if (S.loopId) { clearInterval(S.loopId); S.loopId = null; }
+  if (S.stream) { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
+  $('camWrap').className = '';
+  document.body.classList.remove('camSmall');
+}
+async function loadDetector() {
+  S.detectorStatus = 'loading';
+  try {
+    const mod = await import(MP_BASE + '/vision_bundle.mjs');
+    const V = mod.FaceDetector ? mod : mod.default;
+    const files = await V.FilesetResolver.forVisionTasks(MP_BASE + '/wasm');
+    const opts = (d) => ({ baseOptions: { modelAssetPath: FACE_MODEL, delegate: d }, runningMode: 'VIDEO', minDetectionConfidence: 0.5 });
+    try { S.detector = await V.FaceDetector.createFromOptions(files, opts('GPU')); }
+    catch (e) { S.detector = await V.FaceDetector.createFromOptions(files, opts('CPU')); }
+    S.detectorStatus = 'ok';
+  } catch (e) {
+    console.warn('顔検知を読み込めませんでした', e);
+    S.detectorStatus = 'unavailable';
+    updateBadge();
+  }
+}
+function detectLoop() {
+  const v = $('video');
+  if (document.hidden || !S.detector || v.readyState < 2) { updateBadge(); return; }
+  let n;
+  try {
+    const res = S.detector.detectForVideo(v, performance.now());
+    n = (res.detections || []).length;
+    S.detectErrors = 0;
+  } catch (e) {
+    if (++S.detectErrors > 20) { S.detectorStatus = 'unavailable'; S.detector = null; }
+    return;
+  }
+  S.faceCount = n;
+  onFaceSample(n, Date.now());
+  updateBadge();
+}
+function updateBadge() {
+  const b = $('faceBadge');
+  if (S.detectorStatus === 'loading' || S.detectorStatus === 'off') b.textContent = '顔検知を準備中…';
+  else if (S.detectorStatus === 'unavailable') b.textContent = 'カメラ作動中';
+  else if (S.faceCount === 0) b.textContent = '顔が映っていません';
+  else if (S.faceCount >= 2) b.textContent = '複数の顔が映っています';
+  else if (S.faceCount === 1) b.textContent = '顔を確認しました ✓';
+}
+
+/* 状態の判定：一瞬のぶれでは切り替えず、2回続いたら切り替える */
+function onFaceSample(n, now) {
+  const c = n === 0 ? 'none' : (n >= 2 ? 'multi' : 'ok');
+  if (c !== S.cond) {
+    if (S.pendCond === c) S.pendCount++; else { S.pendCond = c; S.pendCount = 1; }
+    if (S.pendCount >= 2) { closeEpisode(now); S.cond = c; S.condSince = now - 250; S.pendCond = null; S.pendCount = 0; }
+  } else { S.pendCond = null; S.pendCount = 0; }
+
+  const watching = S.phase === 'practice' || S.phase === 'exam';
+  if (!watching || S.mode !== 'camera') return;
+  const dur = now - S.condSince;
+  if (!S.episode) {
+    if (S.cond === 'none' && dur >= NO_FACE_GRACE_MS) openEpisode('顔が映っていない');
+    if (S.cond === 'multi' && dur >= MULTI_FACE_GRACE_MS) openEpisode('複数の顔');
+  }
+}
+function openEpisode(type) {
+  S.episode = { type: type, startAt: S.condSince, q: S.idx + 1 };
+  const text = type === '顔が映っていない'
+    ? '⚠ 顔がカメラに映っていません。スマホを顔の正面で持ってください。'
+    : '⚠ 複数の顔が映っています。1人で受験してください。';
+  $('warn').textContent = text + (S.phase === 'exam' ? '（記録されます）' : '（練習中は記録されません）');
+  $('warn').classList.add('on'); $('camWrap').classList.add('alert');
+  if (navigator.vibrate) try { navigator.vibrate(200); } catch (e) {}
+}
+function closeEpisode(now) {
+  if (!S.episode) return;
+  if (S.phase === 'exam') {
+    S.alerts.push({ type: S.episode.type, q: S.episode.q,
+      startSec: Math.max(0, (S.episode.startAt - S.examStart) / 1000), durSec: (now - S.episode.startAt) / 1000 });
+  }
+  S.episode = null;
+  $('warn').classList.remove('on'); $('camWrap').classList.remove('alert');
+}
+function resetFaceState() { S.episode = null; S.cond = 'ok'; S.condSince = Date.now(); S.pendCond = null; S.pendCount = 0;
+  $('warn').classList.remove('on'); $('camWrap').classList.remove('alert'); }
+
+/* 画面離脱 */
+document.addEventListener('visibilitychange', async () => {
+  if (S.phase !== 'exam') return;
+  if (document.hidden) {
+    S.hiddenAt = Date.now();
+    closeEpisode(S.hiddenAt);
+  } else if (S.hiddenAt) {
+    const now = Date.now();
+    S.alerts.push({ type: '画面離脱', q: S.idx + 1, startSec: (S.hiddenAt - S.examStart) / 1000, durSec: (now - S.hiddenAt) / 1000 });
+    S.hiddenAt = null;
+    resetFaceState();
+    toast('画面を離れたことが記録されました', 3500);
+    if (S.mode === 'camera') {
+      const v = $('video');
+      if (!S.stream || !S.stream.active) { S.cameraStopped = true; S.stream = null; await startCameraQuiet(); }
+      else v.play().catch(() => {});
+    }
+  }
+});
+async function startCameraQuiet() {
+  try {
+    S.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    $('video').srcObject = S.stream; await $('video').play().catch(() => {});
+  } catch (e) { /* 再起動できなくても受験は続ける（記録は残る） */ }
+}
+
+/* ---------- 本人確認 ---------- */
+function goIdentity() {
+  const cam = S.mode === 'camera';
+  $('camWrap').className = cam ? 'big' : '';
+  if (cam) $('camSlot').appendChild($('camWrap'));
+  $('idCamHint').style.display = cam ? 'block' : 'none';
+  $('labOk').style.display = cam ? 'none' : 'block';
+  $('idName').textContent = (S.att.n || '（氏名未登録）') + ' さんとして受験します';
+  $('idEmail').textContent = S.att.e || '';
+  show('s-identity');
+}
+$('btnIdNext').addEventListener('click', () => {
+  if (S.mode === 'camera') { $('camWrap').className = 'small'; document.body.appendChild($('camWrap')); document.body.classList.add('camSmall'); }
+  const n = S.att.q.length, t = S.att.t;
+  $('readyCount').textContent = '全' + n + '問、1問' + t + '秒です（約' + Math.ceil(n * t / 60) + '分）。';
+  $('readyCam').style.display = S.mode === 'camera' ? 'list-item' : 'none';
+  show('s-ready');
+});
+
+/* ---------- 練習・本番 ---------- */
+$('btnPractice').addEventListener('click', () => {
+  S.phase = 'practice'; S.questions = [PRACTICE_Q]; S.idx = 0; resetFaceState();
+  countdown('練習問題', () => showQuestion());
+});
+$('btnStart').addEventListener('click', async () => {
+  $('btnStart').disabled = true; $('startErr').textContent = '';
+  let qs;
+  try { qs = await S.qReady; } catch (e) {
+    return msg('問題を読み込めませんでした',
+      '通信状態を確認してください。下のボタンで入口に戻ると、この受験は取り消され（回数に数えません）、もう一度始められます。（' + errText(e) + '）',
+      S.att.r + '#r=' + b64urlEncode(JSON.stringify({ x: S.att.x, abort: '問題を読み込めない' })));
+  }
+  lsSet('started_' + S.att.x, Date.now());
+  S.questions = qs; S.idx = 0; S.answers = []; S.alerts = [];
+  window.onbeforeunload = () => '受験中です。ページを離れると、この回は中断になります。';
+  countdown('本番', () => { S.phase = 'exam'; S.examStart = Date.now(); resetFaceState(); showQuestion(); });
+});
+function countdown(label, done) {
+  $('countLabel').textContent = label; show('s-count');
+  let n = 3; $('countNum').textContent = n;
+  const id = setInterval(() => {
+    n--; if (n > 0) { $('countNum').textContent = n; return; }
+    clearInterval(id); done();
+  }, 800);
+}
+function showQuestion() {
+  const q = S.questions[S.idx];
+  $('qProg').textContent = S.phase === 'practice' ? '練習' : (S.idx + 1) + ' / ' + S.questions.length;
+  $('qTag').textContent = CAT_LABEL[q.cat] || q.cat;
+  $('qText').textContent = q.text; $('qA').textContent = q.a; $('qB').textContent = q.b;
+  ['choiceA', 'choiceB'].forEach(id => { $(id).classList.remove('picked'); $(id).disabled = false; });
+  S.locked = false;
+  show('s-q');
+  S.qStart = performance.now();
+  const limit = S.att.t * 1000;
+  const bar = $('timerBar');
+  clearInterval(S.tick);
+  S.tick = setInterval(() => {
+    const left = Math.max(0, 1 - (performance.now() - S.qStart) / limit);
+    bar.style.transform = 'scaleX(' + left + ')';
+    $('timer').classList.toggle('low', left < 0.3);
+    if (left <= 0) answer(null);
+  }, 50);
+}
+function answer(choice) {
+  if (S.locked) return;
+  S.locked = true; clearInterval(S.tick);
+  const q = S.questions[S.idx];
+  const ms = Math.round(performance.now() - S.qStart);
+  if (choice) $('choice' + choice).classList.add('picked');
+  ['choiceA', 'choiceB'].forEach(id => { $(id).disabled = true; });
+  if (S.phase === 'exam') S.answers.push({ qid: q.id, choice: choice, ms: choice ? ms : null });
+  setTimeout(() => {
+    if (S.phase === 'practice') return finishPractice(choice);
+    S.idx++;
+    if (S.idx < S.questions.length) showQuestion(); else finishExam();
+  }, 180);
+}
+['choiceA', 'choiceB'].forEach(id => $(id).addEventListener('click', e => answer(e.currentTarget.dataset.c)));
+
+function finishPractice(choice) {
+  S.phase = 'idle'; resetFaceState();
+  S.practiceDone = true; $('btnStart').disabled = false;
+  $('btnPractice').textContent = 'もう一度練習する';
+  show('s-ready');
+  toast(choice ? '練習終了。本番を始められます' : '時間切れでした。本番を始められます', 2500);
+}
+
+function finishExam() {
+  closeEpisode(Date.now());
+  S.phase = 'done';
+  const r1 = (v) => Math.round(v * 10) / 10;
+  const payload = {
+    x: S.att.x,
+    a: S.answers.map(a => [a.qid, a.choice, a.ms]),
+    al: S.alerts.map(a => [a.type, a.q, r1(a.startSec), r1(a.durSec)]),
+    d: S.mode === 'lab' ? 'lab' : S.detectorStatus,
+    cs: S.cameraStopped ? 1 : 0,
+  };
+  lsSet('done_' + S.att.x, payload); // 戻る途中で失敗しても「送り直し」できるように保存
+  goBack(S.att.r, payload, '回答を提出しています…');
+}
+
+boot();
+</script>
+</body>
+</html>
